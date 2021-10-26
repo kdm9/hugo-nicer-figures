@@ -6,24 +6,40 @@ MIT Licensed
 -->
 
 {{- $img := .Page.Resources.GetMatch (.Get "img") -}}
-{{- $main := $img.Resize "2560x jpg q90 lanczos" -}}
+{{- $mainresize := "2560x jpg q90 lanczos" -}}
+{{- with .Get "mainwidth" -}}
+    {{- $mainresize = printf "%dx jpg q90 lanczos" . -}}
+{{- end -}}
+{{- with .Get "mainheight" -}}
+    {{- $mainresize = printf "x%d jpg q90 lanczos" . -}}
+{{- end -}}
+{{- $main := $img.Resize $mainresize -}}
 
-{{- $logo := resources.Get ($.Site.Params.Get "logo") -}}
-{{- if $logo -}}
-    {{- /* Find dynamic size of logo watermark  */ -}}
-    {{- $size := math.Round (mul $main.Height 0.10) -}}
-    {{- $size := cond (ge $size 40) ($size) (40.0) -}}
-    {{- $logo = $logo.Resize (printf "%.0fx png" $size) -}}
+{{- if not (.Get "nologo" | default false) -}}
+    {{- with $.Site.Params.Get "logo" -}}
+        {{- $logo := resources.Get . -}}
+        {{- /* Find dynamic size of logo watermark  */ -}}
+        {{- $size := math.Round (mul $main.Height 0.10) -}}
+        {{- $size := cond (ge $size 40) ($size) (40.0) -}}
+        {{- $logo = $logo.Resize (printf "%.0fx png" $size) -}}
 
-    {{- /* Find logo positiontion: 10px from edge at bottom left */ -}}
-    {{- $main = $main.Filter (images.Overlay $logo (sub (sub $main.Width $logo.Width) 20) (sub (sub $main.Height $logo.Height) 20) ) -}}
+        {{- /* Find logo positiontion: 10px from edge at bottom left */ -}}
+        {{- $main = $main.Filter (images.Overlay $logo (sub (sub $main.Width $logo.Width) 20) (sub (sub $main.Height $logo.Height) 20) ) -}}
+    {{- end -}}
 {{- end -}}
 
-{{- $thumb := $main.Resize "1024x jpg q90 lanczos" -}}
+{{- $thumbresize := "1024x jpg q90 lanczos" -}}
+{{- with .Get "width" -}}
+    {{- $thumbresize = printf "%dx jpg q90 lanczos" . -}}
+{{- end -}}
+{{- with .Get "height" -}}
+    {{- $thumbresize = printf "x%d jpg q90 lanczos" . -}}
+{{- end -}}
+{{- $thumb := $main.Resize $thumbresize -}}
 
 <!-- use either src or link-thumb for thumbnail image -->
 <div class="mainfig fancy-figure caption-position-none hover-effect-zoom hover-transition">
-  <figure itemprop="associatedMedia" itemscope itemtype="http://schema.org/ImageObject" style="{{with .Get "width"}}max-width: {{.}};{{end}}{{with .Get "height"}}max-height: {{.}};{{end}}">
+  <figure itemprop="associatedMedia" itemscope itemtype="http://schema.org/ImageObject" style="max-width: {{$main.Width}}px; max-height: {{$main.Height}}px;">
     <div class="imgcont">
       <div class="imgbkg" style="background-image: url('{{ $thumb.Permalink}}');">
         <!-- <img> hidden if in .gallery -->
