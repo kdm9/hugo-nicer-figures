@@ -1,0 +1,48 @@
+<!--
+Copyright (c) 2017 Li-Wen Yip
+Copyright (c) 2019-2021 K D Murray
+
+MIT Licensed
+-->
+
+<div class="gallery caption-position-{{ with .Get "caption-position" | default "bottom" }}{{.}}{{end}} caption-effect-{{ with .Get "caption-effect" | default "slide" }}{{.}}{{end}} hover-effect-{{ with .Get "hover-effect" | default "zoom" }}{{.}}{{end}} {{ if ne (.Get "hover-transition") "none" }}hover-transition{{end}}" itemscope itemtype="http://schema.org/ImageGallery">
+    {{- with (.Get "match") -}}
+        {{- $files := $.Page.Resources.Match . }}
+        {{- range $img := $files -}}
+            {{- $main := $img.Resize "2560x jpg q90 lanczos" -}}
+
+            {{- $logo := resources.Get ($.Site.Params.Get "logo") -}}
+            {{- if $logo -}}
+                {{- /* Find dynamic size of logo watermark  */ -}}
+                {{- $size := math.Round (mul $main.Height 0.10) -}}
+                {{- $size := cond (ge $size 40) ($size) (40.0) -}}
+                {{- $logo = $logo.Resize (printf "%.0fx png" $size) -}}
+
+                {{- /* Find logo positiontion: 10px from edge at bottom left */ -}}
+                {{- $main = $main.Filter (images.Overlay $logo (sub (sub $main.Width $logo.Width) 20) (sub (sub $main.Height $logo.Height) 20) ) -}}
+            {{- end -}}
+
+            {{- $thumb := $main.Resize "1024x jpg q90 lanczos" -}}
+
+            {{- $caption := .Name | replaceRE "\\..*" "" | humanize -}}
+            {{- with $img.Exif -}}
+                {{- $caption = $img.Exif.Tags.ImageDescription | default $caption -}}
+            {{- end -}}
+            <div class="box">
+                <figure itemprop="associatedMedia" itemscope itemtype="http://schema.org/ImageObject">
+                <div class="img" style="background-image: url('{{ $thumb.Permalink }}');" >
+                    <!-- <img> hidden if in .gallery -->
+                    <img itemprop="thumbnail" src="{{ $thumb.Permalink }}" alt="{{ $caption }}" />
+                </div>
+                <figcaption>
+                    <p>{{ $caption }}</p>
+                </figcaption>
+                <a href="{{ $main.Permalink }}" itemprop="contentUrl"></a><!-- put <a> last so it is stacked on top -->
+            </figure>
+            </div>
+        {{- end }}
+    {{- else -}}
+        <!-- If no directory was specified, include any figure shortcodes called within the gallery -->
+      {{ .Inner }}
+    {{- end }}
+</div>

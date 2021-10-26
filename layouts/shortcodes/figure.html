@@ -1,0 +1,47 @@
+<!--
+Copyright (c) 2017 Li-Wen Yip
+Copyright (c) 2019-2021 K D Murray
+
+MIT Licensed
+-->
+
+{{- $img := .Page.Resources.GetMatch (.Get "img") -}}
+{{- $main := $img.Resize "2560x jpg q90 lanczos" -}}
+
+{{- $logo := resources.Get ($.Site.Params.Get "logo") -}}
+{{- if $logo -}}
+    {{- /* Find dynamic size of logo watermark  */ -}}
+    {{- $size := math.Round (mul $main.Height 0.10) -}}
+    {{- $size := cond (ge $size 40) ($size) (40.0) -}}
+    {{- $logo = $logo.Resize (printf "%.0fx png" $size) -}}
+
+    {{- /* Find logo positiontion: 10px from edge at bottom left */ -}}
+    {{- $main = $main.Filter (images.Overlay $logo (sub (sub $main.Width $logo.Width) 20) (sub (sub $main.Height $logo.Height) 20) ) -}}
+{{- end -}}
+
+{{- $thumb := $main.Resize "1024x jpg q90 lanczos" -}}
+
+<!-- use either src or link-thumb for thumbnail image -->
+<div class="mainfig fancy-figure caption-position-none hover-effect-zoom hover-transition">
+  <figure itemprop="associatedMedia" itemscope itemtype="http://schema.org/ImageObject" style="{{with .Get "width"}}max-width: {{.}};{{end}}{{with .Get "height"}}max-height: {{.}};{{end}}">
+    <div class="imgcont">
+      <div class="imgbkg" style="background-image: url('{{ $thumb.Permalink}}');">
+        <!-- <img> hidden if in .gallery -->
+        <img itemprop="thumbnail" src="{{ $thumb.Permalink }}" {{ with .Get "alt" | default (.Get "caption") }}alt="{{.}}"{{ end }}/>
+      </div>
+    </div>
+    <a href="{{ $main.Permalink }}" itemprop="contentUrl" data-size="{{$main.Width}}x{{$main.Height}}" ></a>
+    <figcaption>
+      {{- if or (or (.Get "title") (.Get "caption")) (.Get "attr")}}
+          {{- with .Get "title" }}<h4>{{.}}</h4>{{ end }}
+          {{- if or (.Get "caption")}}
+            <p>
+              {{- .Get "caption" -}}
+            </p>
+          {{- end }}
+      {{ else }}
+          {{- with $img.Exif }}{{with .Tags.ImageDescription}}<h4>{{ . }}</h4>{{ end }}{{ end }}
+      {{- end }}
+    </figcaption>
+  </figure>
+</div>
